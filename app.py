@@ -1,13 +1,13 @@
 from flask import Flask, request, Response
 import os
 import requests
-import pickle as pk
-import shutil
 import json
 from multiprocessing import Pool
+import re
+
+username_regex = r"Posted by <@+.*>"
 
 app = Flask(__name__)
-
 
 slack_access_token = os.environ.get("slack_access_token")
 client_id = os.environ.get("client_id")
@@ -38,6 +38,21 @@ def download_file(url, file_id, channel_id, comment, user_id):
 		print("Error : "+err)
 
 
+def delete_link(user_id, channel_id, ts):
+	get_headers = {"Authorization": "Bearer {}".format(slack_access_token), "Content-Type": "application/x-www-form-urlencoded"}
+	get_url = "https://slack.com/api/channels.history?channel={}&latest={}&inclusive=true&count=1".format(channel_id, ts)
+	f = requests.get(get_url, headers=get_headers)
+	text = f.json()['messages'][0]['text']
+	match = re.finditer(username_regex, text)
+	match = next(match)
+	posted_user_id = match.group()[12:-1]
+	print(posted_user_id, user_id)
+	if posted_user_id == user_id:
+		hook_headers = {"Authorization": "Bearer {}".format(slack_access_token), "Content-Type": "application/json; charset=utf-8"}
+		message_data = json.dumps({"channel": channel_id, "ts": ts})
+		post_url = "https://slack.com/api/chat.delete"
+		link_delete = requests.post(post_url, headers=hook_headers, data=message_data)
+
 pool = Pool(processes=10)
 
 @app.route('/app',methods=['GET','POST'])
@@ -48,6 +63,14 @@ def hello():
 		return challenge
 	except KeyError:
 		try:
+			try:
+				if json_data['event']['type'] == 'reaction_added' and json_data['event']['reaction'] == 'x':
+					channel_id = json_data['event']['item']['channel']
+					ts = json_data['event']['item']['ts']
+					user_id = json_data['event']['user']
+					i = pool.apply_async(delete_link, [user_id, channel_id, ts])
+			except KeyError as e:
+				print("Err: ",e)
 			print(json_data['event']['file']['id'])
 			file_id = json_data['event']['file']['id']
 			file_info = requests.get("https://slack.com/api/files.info?token={}&file={}".format(slack_access_token, file_id))

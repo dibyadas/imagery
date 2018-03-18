@@ -9,8 +9,7 @@ Add `slack_access_token` and `client_id` to the environment variables in Heroku 
 
 
 # TODO
-
-- [] Add support for other types (?)
+- [ ] Add support for other types (?)
 
 # Contributions
 

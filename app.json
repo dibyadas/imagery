@@ -1,0 +1,21 @@
+{
+  "name": "Imagery",
+  "description": "Imagery is a slack bot that takes any uploaded image, hosts it on Imgur and posts the link to the same channel after deleting the uploaded image, thus, saving space on a free plan.",
+  "keywords": [
+    "slackbot",
+    "Imgur"
+  ],
+  "repository": "https://github.com/dibyadas/imagery",
+  // "logo": "https://small-sharp-tool.com/logo.svg",
+  // "success_url": "/welcome",
+  "env": {
+    "slack_access_token": {
+      "description": "Slack's OAUTH token.",
+      "generator": "secret"
+    },
+    "client-id": {
+      "description": "Client ID obtained while creating the Imgur app",
+      "generator": "secret"
+    }
+  }
+}

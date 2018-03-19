@@ -4,7 +4,11 @@
 
 Imagery is a slack bot that takes any uploaded image, hosts it on Imgur and posts the link to the same channel after deleting the uploaded image, thus, saving space on a free plan.
 
-# Setup
+## GIF Demo
+
+<h3 align="center"><img src="demo.gif"></h3>
+
+## Setup
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
@@ -12,10 +16,10 @@ Deploy this app on heroku and install the app on slack. Create account on Imgur 
 Add `slack_access_token` and `client_id` to the environment variables in Heroku config.
 
 
-# TODO
-- [ ] Add support for other types (?)
+## TODO
+- [ ] Add support for other file types (?)
 
-# Contributions
+## Contributions
 
 PRs and feature suggestions welcome! :D 
 

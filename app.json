@@ -13,7 +13,7 @@
       "description": "Slack's OAUTH token.",
       "generator": "secret"
     },
-    "client-id": {
+    "client_id": {
       "description": "Client ID obtained while creating the Imgur app",
       "generator": "secret"
     }

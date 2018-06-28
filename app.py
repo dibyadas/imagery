@@ -130,7 +130,7 @@ def hello():
 					raise Exception("File too large (> 20MB)")
 				file_permalink = file_data['file']['url_private_download']
 			except Exception as err:
-				print("Err ": + err)
+				print("Err : " + err)
 			try:
 				url_data = request.get_data()
 				'''Slacks interactive message request payload is in the form of

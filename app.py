@@ -55,6 +55,43 @@ def delete_link(user_id, channel_id, ts):
 		post_url = "https://slack.com/api/chat.delete"
 		link_delete = requests.post(post_url, headers=hook_headers, data=message_data)
 
+def send_ephemeral(user_id, channel_id, file_permalink, file_id, comment):
+	print('-----Sending Ephemeral-----')
+	slack_ephemeral_method = "https://slack.com/api/chat.postEphemeral"
+	slack_ephemeral_json = {
+    "attachments": [
+		{
+			"callback_id": "ephemeral_action",
+			"attachment_type": "default",
+			"text": "Would you like to upload this image to imgur?",
+            "actions": [
+				{
+					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
+                    "text": "Yes, save space.",
+                    "type": "button",
+                    "value": "yes"
+				},
+				{
+					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
+					"text": "No, this image is private.",
+					"type": "button",
+					"value": "no",
+					"style": "danger"
+				}
+			]
+        }
+    ]
+	}
+	slack_ephemeral_json['user'] = user_id
+	slack_ephemeral_json['channel'] = channel_id
+	slack_ephemeral_json = json.dumps(slack_ephemeral_json)
+	print(slack_ephemeral_json)  #print the json data to console
+	url = slack_ephemeral_method.format(slack_access_token,)
+	headers={'Authorization': 'Bearer {}'.format(slack_access_token),
+			'Content-type': 'application/json'}
+	r = requests.post(slack_ephemeral_method, headers=headers, data=slack_ephemeral_json)
+	print(r)
+
 pool = Pool(processes=10)
 
 @app.route('/app',methods=['GET','POST'])

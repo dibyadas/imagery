@@ -4,6 +4,7 @@ import requests
 import json
 from multiprocessing import Pool
 import re
+from urllib.parse import parse_qs
 
 username_regex = r"Posted by <@+.*>"
 

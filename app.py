@@ -133,6 +133,7 @@ def hello():
 				print("Err : " + err)
 			try:
 				url_data = request.get_data()
+				print(url_data)
 				'''Slacks interactive message request payload is in the form of
 				application/x-www-form-urlencoded JSON string. Getting first actions parameter
 				from it.'''

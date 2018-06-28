@@ -4,6 +4,7 @@ import requests
 import json
 from multiprocessing import Pool
 import re
+from urllib.parse import parse_qs
 
 username_regex = r"Posted by <@+.*>"
 
@@ -100,7 +101,8 @@ def hello():
 	try:
 		challenge = json_data['challenge']
 		return challenge
-	except KeyError:
+	except Exception as e:
+		print("Err : " + str(e) )
 		try:
 			try:
 				if json_data['event']['type'] == 'reaction_added' and json_data['event']['reaction'] == 'x':
@@ -111,23 +113,26 @@ def hello():
 			except KeyError as e:
 				print("Err: ",e)
 
-			if json_data['event'] in temp_list:
-				raise Exception('Already received. So ignoring this')
-			temp_list.append(json_data['event'])
-			print(json_data['event']['file']['id'])
-			file_id = json_data['event']['file']['id']
-			file_info = requests.get("https://slack.com/api/files.info?token={}&file={}".format(slack_access_token, file_id))
-			file_data = file_info.json()
-			channel_id = file_data['file']['channels'][0]
-			user_id = file_data['file']['user']
 			try:
-				comment = file_data['file']['initial_comment']['comment']
-			except KeyError:
-				comment = ''
-			# print(json_data)
-			if file_data['file']['size']/(1024**2) > 20:
-				raise Exception("File too large (> 20MB)")
-			file_permalink = file_data['file']['url_private_download']
+				if json_data['event'] in temp_list:
+					raise Exception('Already received. So ignoring this')
+				temp_list.append(json_data['event'])
+				print(json_data['event']['file']['id'])
+				file_id = json_data['event']['file']['id']
+				file_info = requests.get("https://slack.com/api/files.info?token={}&file={}".format(slack_access_token, file_id))
+				file_data = file_info.json()
+				channel_id = file_data['file']['channels'][0]
+				user_id = file_data['file']['user']
+				try:
+					comment = file_data['file']['initial_comment']['comment']
+				except KeyError:
+					comment = ''
+				# print(json_data)
+				if file_data['file']['size']/(1024**2) > 20:
+					raise Exception("File too large (> 20MB)")
+				file_permalink = file_data['file']['url_private_download']
+			except Exception as err:
+				print("Err : " + err)
 			try:
 				url_data = request.get_data()
 				'''Slacks interactive message request payload is in the form of

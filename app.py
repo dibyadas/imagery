@@ -97,6 +97,7 @@ pool = Pool(processes=10)
 @app.route('/app',methods=['GET','POST'])
 def hello():
 	json_data = request.json
+	print(request.get_data())
 	try:
 		challenge = json_data['challenge']
 		return challenge
@@ -133,7 +134,6 @@ def hello():
 				print("Err : " + err)
 			try:
 				url_data = request.get_data()
-				print(url_data)
 				'''Slacks interactive message request payload is in the form of
 				application/x-www-form-urlencoded JSON string. Getting first actions parameter
 				from it.'''

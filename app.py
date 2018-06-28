@@ -97,11 +97,11 @@ pool = Pool(processes=10)
 @app.route('/app',methods=['GET','POST'])
 def hello():
 	json_data = request.json
-	print(request.get_data())
 	try:
 		challenge = json_data['challenge']
 		return challenge
-	except KeyError:
+	except Exception as e:
+		print("Err : " + e )
 		try:
 			try:
 				if json_data['event']['type'] == 'reaction_added' and json_data['event']['reaction'] == 'x':

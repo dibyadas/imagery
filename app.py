@@ -128,7 +128,27 @@ def hello():
 			if file_data['file']['size']/(1024**2) > 20:
 				raise Exception("File too large (> 20MB)")
 			file_permalink = file_data['file']['url_private_download']
-			i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
+			try:
+				url_data = request.get_data()
+				'''Slacks interactive message request payload is in the form of
+				application/x-www-form-urlencoded JSON string. Getting first actions parameter
+				from it.'''
+				url_data = json.loads(parse_qs(url_data.decode('utf-8'))['payload'][0])['actions'][0]
+				eph_value = True if url_data['value'] == "yes" else False
+				print(url_data['name'] + " : " + url_data['value'] + " : " + str(eph_value))
+				if eph_value:
+					params = url_data['name'].split('|')
+					file_permalink = params[4]
+					file_id = params[3]
+					channel_id = params[2]
+					comment = params[5]
+					user_id = params[1]
+					i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
+				else:
+					print('---No chosen---')
+			except Exception as err:
+				print(err)
+				j = pool.apply_async(send_ephemeral, [user_id,channel_id,file_permalink,file_id,comment])
 		except Exception as err:
 			print("Error:- " + err)
 		finally:

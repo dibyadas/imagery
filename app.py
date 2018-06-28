@@ -101,7 +101,7 @@ def hello():
 		challenge = json_data['challenge']
 		return challenge
 	except Exception as e:
-		print("Err : " + e )
+		print("Err : " + str(e) )
 		try:
 			try:
 				if json_data['event']['type'] == 'reaction_added' and json_data['event']['reaction'] == 'x':

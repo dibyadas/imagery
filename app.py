@@ -60,17 +60,17 @@ def send_ephemeral(user_id, channel_id, file_permalink, file_id, comment):
 	print('-----Sending Ephemeral-----')
 	slack_ephemeral_method = "https://slack.com/api/chat.postEphemeral"
 	slack_ephemeral_json = {
-    "attachments": [
+	"attachments": [
 		{
 			"callback_id": "ephemeral_action",
 			"attachment_type": "default",
 			"text": "Would you like to upload this image to imgur?",
-            "actions": [
+			"actions": [
 				{
 					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
-                    "text": "Yes, save space.",
-                    "type": "button",
-                    "value": "yes"
+					"text": "Yes, save space.",
+					"type": "button",
+					"value": "yes"
 				},
 				{
 					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
@@ -80,8 +80,8 @@ def send_ephemeral(user_id, channel_id, file_permalink, file_id, comment):
 					"style": "danger"
 				}
 			]
-        }
-    ]
+		}
+	]
 	}
 	slack_ephemeral_json['user'] = user_id
 	slack_ephemeral_json['channel'] = channel_id
@@ -95,7 +95,34 @@ def send_ephemeral(user_id, channel_id, file_permalink, file_id, comment):
 
 pool = Pool(processes=10)
 
-@app.route('/app',methods=['GET','POST'])
+
+@app.route('/handle', methods=['GET','POST'])
+def handle():
+	try:
+		url_data = request.get_data()
+		'''Slacks interactive message request payload is in the form of
+		application/x-www-form-urlencoded JSON string. Getting first actions parameter
+		from it.'''
+		url_data = json.loads(parse_qs(url_data.decode('utf-8'))['payload'][0])['actions'][0]
+		eph_value = True if url_data['value'] == "yes" else False
+		print(url_data['name'] + " : " + url_data['value'] + " : " + str(eph_value))
+		if eph_value:
+			params = url_data['name'].split('|')
+			file_permalink = params[4]
+			file_id = params[3]
+			channel_id = params[2]
+			comment = params[5]
+			user_id = params[1]
+			i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
+		else:
+			print('---No chosen---')
+	except Exception as err:
+		print(err)
+	finally:
+		return ("ok", 200, {'Access-Control-Allow-Origin': '*'})
+
+
+@app.route('/app', methods=['GET','POST'])
 def hello():
 	json_data = request.json
 	try:
@@ -113,47 +140,25 @@ def hello():
 			except KeyError as e:
 				print("Err: ",e)
 
+			if json_data['event'] in temp_list:
+				raise Exception('Already received. So ignoring this')
+			temp_list.append(json_data['event'])
+			print(json_data['event']['file']['id'])
+			file_id = json_data['event']['file']['id']
+			file_info = requests.get("https://slack.com/api/files.info?token={}&file={}".format(slack_access_token, file_id))
+			file_data = file_info.json()
+			channel_id = file_data['file']['channels'][0]
+			user_id = file_data['file']['user']
 			try:
-				if json_data['event'] in temp_list:
-					raise Exception('Already received. So ignoring this')
-				temp_list.append(json_data['event'])
-				print(json_data['event']['file']['id'])
-				file_id = json_data['event']['file']['id']
-				file_info = requests.get("https://slack.com/api/files.info?token={}&file={}".format(slack_access_token, file_id))
-				file_data = file_info.json()
-				channel_id = file_data['file']['channels'][0]
-				user_id = file_data['file']['user']
-				try:
-					comment = file_data['file']['initial_comment']['comment']
-				except KeyError:
-					comment = ''
-				# print(json_data)
-				if file_data['file']['size']/(1024**2) > 20:
-					raise Exception("File too large (> 20MB)")
-				file_permalink = file_data['file']['url_private_download']
-			except Exception as err:
-				print("Err : " + err)
-			try:
-				url_data = request.get_data()
-				'''Slacks interactive message request payload is in the form of
-				application/x-www-form-urlencoded JSON string. Getting first actions parameter
-				from it.'''
-				url_data = json.loads(parse_qs(url_data.decode('utf-8'))['payload'][0])['actions'][0]
-				eph_value = True if url_data['value'] == "yes" else False
-				print(url_data['name'] + " : " + url_data['value'] + " : " + str(eph_value))
-				if eph_value:
-					params = url_data['name'].split('|')
-					file_permalink = params[4]
-					file_id = params[3]
-					channel_id = params[2]
-					comment = params[5]
-					user_id = params[1]
-					i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
-				else:
-					print('---No chosen---')
-			except Exception as err:
-				print(err)
-				j = pool.apply_async(send_ephemeral, [user_id,channel_id,file_permalink,file_id,comment])
+				comment = file_data['file']['initial_comment']['comment']
+			except KeyError:
+				comment = ''
+			# print(json_data)
+			if file_data['file']['size']/(1024**2) > 20:
+				raise Exception("File too large (> 20MB)")
+			file_permalink = file_data['file']['url_private_download']
+			i = pool.apply_async(send_ephemeral, [user_id,channel_id,file_permalink,file_id,comment])
+
 		except Exception as err:
 			print("Error:- " + err)
 		finally:

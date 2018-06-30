@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 import os
 import requests
 import json
@@ -120,7 +120,7 @@ def handle():
 	except Exception as err:
 		print(err)
 	finally:
-		return ("ok", 200, {'Access-Control-Allow-Origin': '*'})
+		return jsonify({"response_type": "ephemeral",   "replace_original": "true",    "delete_original": "true",    "text": ""})
 
 
 @app.route('/app', methods=['GET','POST'])

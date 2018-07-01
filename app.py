@@ -1,9 +1,10 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 import os
 import requests
 import json
 from multiprocessing import Pool
 import re
+from urllib.parse import parse_qs
 
 username_regex = r"Posted by <@+.*>"
 
@@ -55,9 +56,74 @@ def delete_link(user_id, channel_id, ts):
 		post_url = "https://slack.com/api/chat.delete"
 		link_delete = requests.post(post_url, headers=hook_headers, data=message_data)
 
+def send_ephemeral(user_id, channel_id, file_permalink, file_id, comment):
+	print('-----Sending Ephemeral-----')
+	slack_ephemeral_method = "https://slack.com/api/chat.postEphemeral"
+	slack_ephemeral_json = {
+	"attachments": [
+		{
+			"callback_id": "ephemeral_action",
+			"attachment_type": "default",
+			"text": "Would you like to upload this image to imgur?",
+			"actions": [
+				{
+					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
+					"text": "Yes, save space.",
+					"type": "button",
+					"value": "yes"
+				},
+				{
+					"name": "response|{}|{}|{}|{}|{}".format(user_id,channel_id,file_id,file_permalink,comment),
+					"text": "No, this image is private.",
+					"type": "button",
+					"value": "no",
+					"style": "danger"
+				}
+			]
+		}
+	]
+	}
+	slack_ephemeral_json['user'] = user_id
+	slack_ephemeral_json['channel'] = channel_id
+	slack_ephemeral_json = json.dumps(slack_ephemeral_json)
+	print(slack_ephemeral_json)  #print the json data to console
+	url = slack_ephemeral_method.format(slack_access_token,)
+	headers={'Authorization': 'Bearer {}'.format(slack_access_token),
+			'Content-type': 'application/json'}
+	r = requests.post(slack_ephemeral_method, headers=headers, data=slack_ephemeral_json)
+	print(r)
+
 pool = Pool(processes=10)
 
-@app.route('/app',methods=['GET','POST'])
+
+@app.route('/handle', methods=['GET','POST'])
+def handle():
+	try:
+		url_data = request.get_data()
+		print(url_data)
+		'''Slacks interactive message request payload is in the form of
+		application/x-www-form-urlencoded JSON string. Getting first actions parameter
+		from it.'''
+		url_data = json.loads(parse_qs(url_data.decode('utf-8'))['payload'][0])['actions'][0]
+		eph_value = True if url_data['value'] == "yes" else False
+		print(url_data['name'] + " : " + url_data['value'] + " : " + str(eph_value))
+		if eph_value:
+			params = url_data['name'].split('|')
+			file_permalink = params[4]
+			file_id = params[3]
+			channel_id = params[2]
+			comment = params[5]
+			user_id = params[1]
+			i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
+		else:
+			print('---No chosen---')
+	except Exception as err:
+		print(err)
+	finally:
+		return jsonify({"response_type": "ephemeral",   "replace_original": "true",    "delete_original": "true",    "text": ""})
+
+
+@app.route('/app', methods=['GET','POST'])
 def hello():
 	json_data = request.json
 	try:
@@ -91,11 +157,14 @@ def hello():
 			if file_data['file']['size']/(1024**2) > 20:
 				raise Exception("File too large (> 20MB)")
 			file_permalink = file_data['file']['url_private_download']
-			i = pool.apply_async(download_file, [file_permalink, file_id, channel_id, comment, user_id])
+			i = pool.apply_async(send_ephemeral, [user_id, channel_id, file_permalink, file_id, comment])
+
 		except Exception as err:
 			print("Error:- " + err)
 		finally:
 			return ("ok", 200, {'Access-Control-Allow-Origin': '*'})
+	except Exception as err:
+		print("Error:- " + str(err))
 
 
 if __name__ == '__main__':

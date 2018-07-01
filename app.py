@@ -129,8 +129,7 @@ def hello():
 	try:
 		challenge = json_data['challenge']
 		return challenge
-	except Exception as e:
-		print("Err : " + str(e) )
+	except KeyError:
 		try:
 			try:
 				if json_data['event']['type'] == 'reaction_added' and json_data['event']['reaction'] == 'x':
@@ -158,12 +157,14 @@ def hello():
 			if file_data['file']['size']/(1024**2) > 20:
 				raise Exception("File too large (> 20MB)")
 			file_permalink = file_data['file']['url_private_download']
-			i = pool.apply_async(send_ephemeral, [user_id,channel_id,file_permalink,file_id,comment])
+			i = pool.apply_async(send_ephemeral, [user_id, channel_id, file_permalink, file_id, comment])
 
 		except Exception as err:
 			print("Error:- " + err)
 		finally:
 			return ("ok", 200, {'Access-Control-Allow-Origin': '*'})
+	except Exception as err:
+		print("Error:- " + str(err))
 
 
 if __name__ == '__main__':

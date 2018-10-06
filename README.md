@@ -15,6 +15,9 @@ Imagery is a slack bot that takes any uploaded image, hosts it on Imgur and post
 Deploy this app on heroku and install the app on slack. Create account on Imgur and get a `Client-ID`
 Add `slack_access_token` and `client_id` to the environment variables in Heroku config.
 
+## Updates
+
+Imagery now sends a private message that asks if the image is to be uploaded to Imgur. (In case it's an private image)
 
 ## TODO
 - [ ] Add support for other file types (?)

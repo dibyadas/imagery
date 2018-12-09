@@ -6,8 +6,6 @@
     "Imgur"
   ],
   "repository": "https://github.com/dibyadas/imagery",
-  // "logo": "https://small-sharp-tool.com/logo.svg",
-  // "success_url": "/welcome",
   "env": {
     "slack_access_token": {
       "description": "Slack's OAUTH token.",
